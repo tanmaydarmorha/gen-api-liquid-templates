@@ -1,0 +1,32 @@
+<mat-card class="container">
+    <mat-card-header>
+      <mat-card-title>File Upload</mat-card-title>
+    </mat-card-header>
+  
+    <mat-card-content>
+      <div class="file-upload">
+        <label for="input-json">Input JSON:</label>
+        <input type="file" id="input-json" (change)="onFileSelected('inputJson', $event)">
+      </div>
+  
+      <div class="file-upload">
+        <label for="sample-output">Sample Output:</label>
+        <input type="file" id="sample-output" (change)="onFileSelected('sampleOutput', $event)">
+      </div>
+  
+      <div class="file-upload">
+        <label for="mapping-document">Mapping Document:</label>
+        <input type="file" id="mapping-document" (change)="onFileSelected('mappingDocument', $event)">
+      </div>
+  
+      <button mat-raised-button color="primary" (click)="processFiles()">Process Files</button>
+  
+      <div *ngIf="isLoading">
+        <mat-spinner></mat-spinner>
+      </div>
+  
+      <div *ngIf="responseMessage">
+        {{ responseMessage }}
+      </div>
+    </mat-card-content>
+  </mat-card>
