@@ -1,10 +1,14 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS, cross_origin # Import CORS
 import os
 import google.generativeai as genai
 import re
 
 # Set the application name
 app = Flask(__name__, instance_relative_config=True)
+
+# Configure CORS 
+CORS(app, resources={r"/generateTemplates": {"origins": "*"}}) # Allow requests from any origin
 
 # Configure Gemini API key
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
@@ -30,8 +34,8 @@ def generate_templates():
 
     Request Body:
     {
-        "inputJson": { ... },
-        "mappingRules": { ... }
+        "inputJson": "string",
+        "mappingRules": "string"
     }
 
     Returns:
@@ -56,7 +60,7 @@ def generate_templates():
     ]
 
     # Replace placeholders with actual data
-    prompt[5] = prompt[5].format(str(input_json), str(mapping_rules))
+    prompt[5] = prompt[5].format(input_json, mapping_rules)
 
     # Call Gemini model
     response = model.generate_content(prompt)
@@ -80,7 +84,9 @@ def generate_templates():
     template = re.sub(r'```liquid\n|\n```', '', response.text)
 
     # Return the generated liquid template as a string
-    return jsonify({"template": template})
+    returnItem = jsonify({"template": template})
+    print(returnItem)
+    return returnItem
 
 if __name__ == '__main__':
     app.run(debug=True)
