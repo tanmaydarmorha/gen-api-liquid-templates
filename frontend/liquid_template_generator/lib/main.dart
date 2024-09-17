@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:google_generative_ai/google_generative_ai.dart';
-import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 void main() {
   runApp(const MyApp());
@@ -162,11 +162,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   _isLoading = true; // Set loading state
                 });
                 _outputText = ''; // Reset output text
-                // Simulate a 3-second delay before typing
-                String generatedText = await _generateOutputText(_inputJson, _mappingRules);
+                String generatedText = await _generateOutputText();
                 setState(() {
                   _isLoading = false; // End loading state
                 });
+                // Call the character-by-character printing function
                 _typeCharacterByCharacter(generatedText);
               },
               child: Icon(Icons.arrow_right_alt),
@@ -177,39 +177,32 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  final model = GenerativeModel(
-    model: 'gemini-1.5-flash',
-    apiKey: "apiKey",
-    // safetySettings: Adjust safety settings
-    // See https://ai.google.dev/gemini-api/docs/safety-settings
-    generationConfig: GenerationConfig(
-      temperature: 1,
-      topK: 64,
-      topP: 0.95,
-      maxOutputTokens: 8192,
-      responseMimeType: 'text/plain',
-    ),
-  );
-
-  Future<String> _generateOutputText(String inputJson, String mappingRules) async {
-final response = await model.generateContent([
-      Content(
-          text: 'response should only contain liquid template, no explanation needed'),
-      Content(text: 'input: if input is json array'),
-      Content(text: 'output: response should be a fhir bundle liquid template'),
-      Content(text: 'input: if input is json object'),
-      Content(text: 'output: response should be a fhir resource liquid template'),
-      Content(
-          text: 'input: $inputJson \n\nI have this json, I want a liquid template which converts this to following FHIR json\n\n $mappingRules'),
-      Content(text: 'output: '),
-    ]);
-    // Extract the generated text from the response
-    return (response.first as Map<String, dynamic>)['content'] as String; 
+  Future<String> _generateOutputText() async {
+    final url = Uri.parse('http://localhost:5000/generateTemplates');
+    final body = jsonEncode({
+      "inputJson": _inputJson,
+      "mappingRules": _mappingRules,
+    });
+    // Print the request details for debugging
+    print('Request URL: $url');
+    print('Request Body: $body');
+    final response = await http.post(url,
+        headers: {'Content-Type': 'application/json'}, body: body);
+    print('Response Status Code: ${response.statusCode}');
+    print('Response Body: ${response.body}');
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return data['template']
+          as String; // Assuming the response has a 'template' field
+    } else {
+      // Handle errors
+      throw Exception('Failed to generate template: ${response.statusCode}');
+    }
   }
 
   void _typeCharacterByCharacter(String text) {
     int index = 0;
-    _typingTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+    _typingTimer = Timer.periodic(const Duration(milliseconds: 5), (timer) {
       if (index < text.length) {
         setState(() {
           _outputText += text[index];
